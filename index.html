@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase LED Control</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f0f0f0; }
+        button { padding: 20px 40px; font-size: 20px; margin: 10px; border: none; border-radius: 10px; cursor: pointer; color: white; }
+        .on { background-color: #4CAF50; }
+        .off { background-color: #f44336; }
+        #status { margin-top: 20px; font-weight: bold; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <h1>Control ESP32 via Supabase</h1>
+    <button class="on" onclick="toggleLed(true)">Turn ON</button>
+    <button class="off" onclick="toggleLed(false)">Turn OFF</button>
+    <p id="status">Status: Waiting...</p>
+
+    <script>
+        // --- CONFIGURATION ---
+        const supabaseUrl = 'https://vakhussvqeurxcowawys.supabase.co';
+        // PASTE YOUR KEY BELOW
+        const supabaseKey = 'sb_publishable_gD5xL5mbSe7h0BeCgP2tkQ_57tpzb6N'; 
+        
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function toggleLed(state) {
+            document.getElementById('status').innerText = "Sending...";
+            
+            // Update the 'is_on' column for the row with id=1
+            const { data, error } = await supabase
+                .from('led_control')
+                .update({ is_on: state })
+                .eq('id', 1);
+
+            if (error) {
+                console.error(error);
+                document.getElementById('status').innerText = "Error!";
+            } else {
+                document.getElementById('status').innerText = state ? "Sent: ON" : "Sent: OFF";
+            }
+        }
+    </script>
+</body>
+</html>
