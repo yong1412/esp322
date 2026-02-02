@@ -3,47 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supabase LED Control</title>
-    <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f0f0f0; }
-        button { padding: 20px 40px; font-size: 20px; margin: 10px; border: none; border-radius: 10px; cursor: pointer; color: white; }
-        .on { background-color: #4CAF50; }
-        .off { background-color: #f44336; }
-        #status { margin-top: 20px; font-weight: bold; }
-    </style>
+    <title>ESP32 LED Controller</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border: none; border-radius: 8px; color: white; transition: 0.3s; }
+        .on { background-color: #22c55e; }
+        .off { background-color: #ef4444; }
+        .status { margin-top: 1rem; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-    <h1>Control ESP32 via Supabase</h1>
-    <button class="on" onclick="toggleLed(true)">Turn ON</button>
-    <button class="off" onclick="toggleLed(false)">Turn OFF</button>
-    <p id="status">Status: Waiting...</p>
+    <div class="card">
+        <h2>ESP32 Control Panel</h2>
+        <div id="led-status" class="status">Loading status...</div>
+        <br>
+        <button id="toggle-btn" class="off">Loading...</button>
+    </div>
 
     <script>
-        // --- CONFIGURATION ---
-        const supabaseUrl = 'https://vakhussvqeurxcowawys.supabase.co';
-        // PASTE YOUR KEY BELOW
-        const supabaseKey = 'sb_publishable_gD5xL5mbSe7h0BeCgP2tkQ_57tpzb6N'; 
+        // Your Supabase Credentials
+        const SUPABASE_URL = "https://vakhussvqeurxcowawys.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_gD5xL5mbSe7h0BeCgP2tkQ_57tpzb6N";
         
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        async function toggleLed(state) {
-            document.getElementById('status').innerText = "Sending...";
-            
-            // Update the 'is_on' column for the row with id=1
-            const { data, error } = await supabase
+        const btn = document.getElementById('toggle-btn');
+        const statusText = document.getElementById('led-status');
+        let is_on = false;
+
+        // 1. Fetch current state on load
+        async function fetchStatus() {
+            let { data, error } = await _supabase
                 .from('led_control')
-                .update({ is_on: state })
-                .eq('id', 1);
+                .select('is_on')
+                .eq('id', 1)
+                .single();
 
-            if (error) {
-                console.error(error);
-                document.getElementById('status').innerText = "Error!";
-            } else {
-                document.getElementById('status').innerText = state ? "Sent: ON" : "Sent: OFF";
+            if (data) {
+                updateUI(data.is_on);
             }
         }
+
+        // 2. Update UI based on state
+        function updateUI(state) {
+            is_on = state;
+            btn.innerText = is_on ? "Turn OFF" : "Turn ON";
+            btn.className = is_on ? "off" : "on";
+            statusText.innerText = "LED is currently: " + (is_on ? "ON" : "OFF");
+        }
+
+        // 3. Toggle state in Supabase
+        btn.onclick = async () => {
+            const { error } = await _supabase
+                .from('led_control')
+                .update({ is_on: !is_on })
+                .eq('id', 1);
+
+            if (!error) {
+                updateUI(!is_on);
+            } else {
+                console.error("Update failed:", error);
+            }
+        };
+
+        fetchStatus();
     </script>
 </body>
 </html>
